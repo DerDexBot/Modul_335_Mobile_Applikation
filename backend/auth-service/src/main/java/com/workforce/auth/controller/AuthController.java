@@ -18,13 +18,14 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> body) {
         User user = authService.authenticate(body.get("username"), body.get("password"));
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         return ResponseEntity.ok(Map.of(
                 "token", token,
                 "role", user.getRole().getName(),
-                "username", user.getUsername()
+                "username", user.getUsername(),
+                "userId", user.getId()
         ));
     }
 

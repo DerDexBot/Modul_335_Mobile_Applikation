@@ -7,6 +7,7 @@ import com.workforce.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,7 @@ import java.util.List;
  *
  * <p>Alle Endpunkte erfordern eine gültige JWT-Authentifizierung.
  * Endpunkte zur Verwaltung sind auf die Rollen {@code HR} und {@code ADMIN} beschränkt.
+ * Schichtleiter dürfen über die Listenansicht nur Mitarbeiter abrufen, damit sie Schichten planen können.
  *
  * <p>Basis-URL: {@code /api/users}
  */
@@ -51,11 +53,20 @@ public class UserController {
      * @return Liste der Benutzer als {@link UserResponse}
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HR', 'ADMIN', 'SHIFT_LEAD')")
     public ResponseEntity<List<UserResponse>> getUsers(
             @RequestParam(required = false) String role,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            Authentication authentication) {
+        if (isShiftLead(authentication)) {
+            role = "EMPLOYEE";
+        }
         return ResponseEntity.ok(userService.getUsers(role, search));
+    }
+
+    private boolean isShiftLead(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_SHIFT_LEAD".equals(authority.getAuthority()));
     }
 
     /**

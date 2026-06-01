@@ -92,11 +92,12 @@ Antwort:
 {
   "token": "eyJ...",
   "role": "HR",
-  "username": "hr.mueller"
+  "username": "hr.mueller",
+  "userId": 2
 }
 ```
 
-Den `token`-Wert als `Authorization: Bearer <token>` Header für alle weiteren Anfragen verwenden.
+Den `token`-Wert als `Authorization: Bearer <token>` Header für alle weiteren Anfragen verwenden. `userId` wird von Web- und Mobile-Frontend verwendet, damit Arbeitspläne und Kalender dem eingeloggten Benutzer zugeordnet werden können.
 
 ---
 
@@ -110,6 +111,29 @@ Nach dem Login mit `hr.mueller` / `password` erscheint das Dashboard mit vier Ka
 | Stundenübersicht       | `/time`        | Gesamtstunden pro Zeitraum, Monatsdetail pro Mitarbeiter |
 | Rechnungen             | `/invoices`    | Rechnungen erstellen, versenden, als bezahlt markieren |
 | Absenzen & Ferien      | `/absences`    | Ferienanträge genehmigen oder ablehnen                |
+
+---
+
+### Schritt 6 – Schichtleiter-Frontend starten und verwenden
+
+Im Entwicklungsmodus:
+
+```bash
+cd frontend/shiftlead-web
+npm install
+npm run dev
+```
+
+Alternativ ist das Schichtleiter-Web via Docker unter **http://localhost:3003** erreichbar, wenn der entsprechende Container gestartet wird.
+
+Nach dem Login mit `sl.huber` / `password` kann der Schichtleiter unter `/planning`:
+
+| Funktion | Beschreibung |
+|---|---|
+| Arbeitsplan erstellen | Titel, Zeitraum und HR-Stundenkontingent erfassen |
+| Schichten hinzufügen | Mitarbeiter, Datum, Start-/Endzeit, Auftrag-ID und Notiz erfassen |
+| Stunden prüfen | Geplante Stunden, Reststunden, Überplanung und Unterplanung sehen |
+| Arbeitsplan veröffentlichen | Schichten für die Mobile-App sichtbar machen |
 
 ---
 
@@ -550,12 +574,17 @@ Bereits vorhanden: Login, Dashboard mit Navigation
 
 ### Schichtleiter Web · Port 3003
 
-Bereits vorhanden: Login, Dashboard mit Navigation
-
-**Noch zu implementieren:**
+**Implementiert:**
+- Login mit Rollenprüfung `SHIFT_LEAD` und Speicherung von `userId`
+- Dashboard mit Kacheln für Planung, Aufträge und Notizen
 - Arbeitsplan-Erstellung (`/planning`)
-- Auftrags-Ansicht (`/orders`)
-- Notizen-Erfassung (`/notes`)
+- Schichten hinzufügen inklusive Mitarbeiter-Auswahl, optionaler Auftrag-ID und Notiz
+- Stundenübersicht mit HR-Kontingent, geplanten Stunden, Reststunden und Warnungen
+- Arbeitsplan veröffentlichen, damit Mitarbeiter die Schichten im Mobile-Kalender sehen
+
+**Vorbereitet:**
+- Auftrags-Ansicht (`/orders`) als Platzhalter, bis der Order Service echte Auftragsdaten liefert
+- Notizen-Übersicht (`/notes`) als Platzhalter; Schichtnotizen werden bereits im Arbeitsplan gespeichert
 
 ---
 
@@ -568,18 +597,17 @@ Bereits vorhanden: Login, Dashboard mit Navigation
 | Datei | Inhalt |
 |---|---|
 | `lib/main.dart` | App-Einstieg, Provider-Setup, Login/Home-Weiche |
-| `lib/services/auth_service.dart` | Login, Logout, JWT speichern (SharedPreferences), ChangeNotifier |
+| `lib/services/auth_service.dart` | Login, Logout, JWT/UserId/Rolle speichern (SharedPreferences), ChangeNotifier |
 | `lib/services/api_service.dart` | GET, POST, Bild-Upload mit Auth-Header |
 | `lib/screens/login_screen.dart` | Login-UI |
 | `lib/screens/home_screen.dart` | Bottom-Navigation mit 4 Tabs |
-| `lib/screens/calendar_screen.dart` | Placeholder – Arbeitskalender |
+| `lib/screens/calendar_screen.dart` | Arbeitskalender mit echten veröffentlichten Schichten aus dem Planning Service |
 | `lib/screens/checkin_screen.dart` | Check-in / Check-out Button |
 | `lib/screens/absence_screen.dart` | Ferienanfrage + Absenz einreichen |
 | `lib/screens/report_screen.dart` | Kamera öffnen, Bild aufnehmen, Hochladen |
 
 ### Noch zu implementieren
 
-- Kalender mit echten Schicht-Daten aus Planning Service
 - Check-in/out mit API-Aufruf verbinden
 - Ferienanfrage-Formular mit Datumswahl
 - Bild-Upload tatsächlich mit Report Service verbinden
