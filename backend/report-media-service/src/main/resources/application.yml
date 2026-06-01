@@ -1,0 +1,10 @@
+server:
+  port: 8008
+spring:
+  application:
+    name: report-media-service
+  data:
+    mongodb:
+      uri: mongodb://workforce:workforce@localhost:27017/workforce-media?authSource=admin
+jwt:
+  secret: workforce-super-secret-jwt-key-change-in-production-min-256-bits

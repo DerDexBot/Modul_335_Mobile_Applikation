@@ -1,0 +1,252 @@
+version: "3.9"
+
+services:
+
+  # ── Databases ──────────────────────────────────────────────────────────────
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: workforce
+      MYSQL_USER: workforce
+      MYSQL_PASSWORD: workforce
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - workforce-net
+
+  mongo-db:
+    image: mongo:7.0
+    container_name: mongo-db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: workforce
+      MONGO_INITDB_ROOT_PASSWORD: workforce
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - workforce-net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql-db
+      PMA_USER: workforce
+      PMA_PASSWORD: workforce
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: workforce
+      ME_CONFIG_MONGODB_ADMINPASSWORD: workforce
+      ME_CONFIG_MONGODB_URL: mongodb://workforce:workforce@mongo-db:27017/
+      ME_CONFIG_BASICAUTH: "false"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo-db
+    networks:
+      - workforce-net
+
+  # ── Backend Microservices ───────────────────────────────────────────────────
+
+  api-gateway:
+    build: ./backend/api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - auth-service
+      - user-role-service
+      - order-service
+      - planning-service
+      - time-service
+      - absence-vacation-service
+      - billing-service
+      - report-media-service
+    networks:
+      - workforce-net
+
+  auth-service:
+    build: ./backend/auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  user-role-service:
+    build: ./backend/user-role-service
+    container_name: user-role-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  order-service:
+    build: ./backend/order-service
+    container_name: order-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  planning-service:
+    build: ./backend/planning-service
+    container_name: planning-service
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  time-service:
+    build: ./backend/time-service
+    container_name: time-service
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  absence-vacation-service:
+    build: ./backend/absence-vacation-service
+    container_name: absence-vacation-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  billing-service:
+    build: ./backend/billing-service
+    container_name: billing-service
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/workforce
+      SPRING_DATASOURCE_USERNAME: workforce
+      SPRING_DATASOURCE_PASSWORD: workforce
+    depends_on:
+      - mysql-db
+    networks:
+      - workforce-net
+
+  report-media-service:
+    build: ./backend/report-media-service
+    container_name: report-media-service
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://workforce:workforce@mongo-db:27017/workforce-media?authSource=admin
+    depends_on:
+      - mongo-db
+    networks:
+      - workforce-net
+
+  # ── Frontends ──────────────────────────────────────────────────────────────
+
+  admin-web:
+    build: ./frontend/admin-web
+    container_name: admin-web
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - workforce-net
+
+  hr-web:
+    build: ./frontend/hr-web
+    container_name: hr-web
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    networks:
+      - workforce-net
+
+  shiftlead-web:
+    build: ./frontend/shiftlead-web
+    container_name: shiftlead-web
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    networks:
+      - workforce-net
+
+volumes:
+  mysql-data:
+  mongo-data:
+
+networks:
+  workforce-net:
+    driver: bridge

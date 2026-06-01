@@ -1,0 +1,16 @@
+server:
+  port: 8003
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/workforce
+    username: workforce
+    password: workforce
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+jwt:
+  secret: workforce-super-secret-jwt-key-change-in-production-min-256-bits
