@@ -49,23 +49,28 @@ CREATE TABLE order_employees (
 
 CREATE TABLE work_plans (
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title           VARCHAR(200),
-    shift_lead_id   BIGINT,
-    start_date      DATE,
-    end_date        DATE,
+    title           VARCHAR(200) NOT NULL,
+    shift_lead_id   BIGINT NOT NULL,
+    start_date      DATE NOT NULL,
+    end_date        DATE NOT NULL,
+    approved_hours  DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    status          ENUM('DRAFT','PUBLISHED') NOT NULL DEFAULT 'DRAFT',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    published_at    TIMESTAMP NULL,
     FOREIGN KEY (shift_lead_id) REFERENCES users(id)
 );
 
 CREATE TABLE shifts (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    work_plan_id BIGINT,
-    employee_id  BIGINT,
-    shift_date   DATE,
-    start_time   TIME,
-    end_time     TIME,
+    work_plan_id BIGINT NOT NULL,
+    order_id     BIGINT NULL,
+    employee_id  BIGINT NOT NULL,
+    shift_date   DATE NOT NULL,
+    start_time   TIME NOT NULL,
+    end_time     TIME NOT NULL,
     notes        TEXT,
     FOREIGN KEY (work_plan_id) REFERENCES work_plans(id),
+    FOREIGN KEY (order_id)     REFERENCES orders(id),
     FOREIGN KEY (employee_id)  REFERENCES users(id)
 );
 

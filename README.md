@@ -7,8 +7,6 @@ Klasse: Modul 335
 
 ## Dokumentation
 
-## Dokumentation
-
 | Dokument | Beschreibung |
 |---|---|
 | [User Stories – HR](docs/userstories_hr.md) | User Stories mit Akzeptanzkriterien für die HR-Rolle |
@@ -33,7 +31,7 @@ Klasse: Modul 335
 Im Stammverzeichnis des Projekts (`Modul_335_Mobile_Applikation/`) folgenden Befehl ausführen:
 
 ```bash
-docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service time-service billing-service absence-vacation-service api-gateway -d
+docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service order-service planning-service time-service billing-service absence-vacation-service report-media-service api-gateway -d
 ```
 
 > **Hinweis:** Der erste Start dauert einige Minuten, da Docker alle Images baut und Maven-Abhängigkeiten herunterlädt. Bei weiteren Starts ohne `--build` geht es viel schneller.
@@ -404,14 +402,57 @@ Jede React-App hat dieselbe interne Struktur:
 
 ### 6.5 Planning Service · Port 8004
 
-**Aufgabe:** Schichtleiter erstellt Arbeitspläne für sein Team. Mitarbeiter sehen ihren Arbeitskalender.
+**Aufgabe:** Schichtleiter erstellt Arbeitspläne für sein Team. Mitarbeiter sehen ihren Arbeitskalender. Der Service verwaltet HR-Stundenkontingente, geplante Schichten, Warnungen bei Über-/Unterplanung und den veröffentlichten Kalender für die Mobile App.
 
-**Noch zu implementieren:**
-- `GET /api/planning/calendar/{employeeId}` – Kalender eines Mitarbeiters
-- `POST /api/planning/workplans` – Arbeitsplan erstellen
-- `POST /api/planning/workplans/{id}/shifts` – Schicht hinzufügen
-- `GET /api/planning/workplans` – Arbeitspläne des Schichtleiters
-- Entities: `WorkPlan`, `Shift`
+**Implementiert:**
+- `POST /api/planning/workplans` – Arbeitsplan mit HR-Stundenkontingent erstellen
+- `GET /api/planning/workplans` – Arbeitspläne auflisten, optional mit `?shiftLeadId=` filtern
+- `GET /api/planning/workplans/{id}` – Arbeitsplan inkl. Schichten und Stundenübersicht anzeigen
+- `PUT /api/planning/workplans/{id}` – Arbeitsplan-Entwurf bearbeiten
+- `POST /api/planning/workplans/{id}/shifts` – Schicht hinzufügen, optional mit `orderId`
+- `PUT /api/planning/workplans/{id}/publish` – Arbeitsplan veröffentlichen
+- `GET /api/planning/calendar/{employeeId}` – veröffentlichte Kalenderschichten eines Mitarbeiters anzeigen
+- Entities: `WorkPlan`, `Shift`, `WorkPlanStatus`
+
+**Stundenlogik:**
+- `approvedHours` enthält die von HR freigegebenen Monats-/Planstunden.
+- `plannedHours` wird aus allen Schichten eines Arbeitsplans berechnet.
+- `remainingHours` zeigt die Differenz zwischen freigegebenen und geplanten Stunden.
+- `overLimit` wird `true`, wenn mehr als das HR-Kontingent geplant wurde.
+- `underPlanned` wird `true`, wenn weniger als 95 % des HR-Kontingents geplant wurden.
+
+**Beispiel: Arbeitsplan erstellen**
+
+```http
+POST http://localhost:8000/api/planning/workplans
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Monatsplan Juni",
+  "shiftLeadId": 3,
+  "startDate": "2026-06-01",
+  "endDate": "2026-06-30",
+  "approvedHours": 1000
+}
+```
+
+**Beispiel: Schicht hinzufügen**
+
+```http
+POST http://localhost:8000/api/planning/workplans/1/shifts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "employeeId": 4,
+  "orderId": null,
+  "shiftDate": "2026-06-03",
+  "startTime": "08:00",
+  "endTime": "17:00",
+  "notes": "Tagesschicht"
+}
+```
 
 ---
 
@@ -566,8 +607,8 @@ Tabellen (automatisch angelegt via `database/mysql/init.sql`):
 | `users` | Alle Benutzer mit Rollenzuweisung |
 | `orders` | Aufträge |
 | `order_employees` | Zuordnung Mitarbeiter ↔ Auftrag |
-| `work_plans` | Arbeitspläne |
-| `shifts` | Einzelschichten |
+| `work_plans` | Arbeitspläne inkl. HR-Stundenkontingent, Status und Veröffentlichungszeitpunkt |
+| `shifts` | Einzelschichten mit Mitarbeiter- und optionalem Auftragsbezug |
 | `time_entries` | Check-in/out Einträge |
 | `absences` | Absenzen und Ferienanfragen |
 | `invoices` | Rechnungen |
@@ -614,10 +655,10 @@ Collection: `media_reports`
 
 ### Backend starten (empfohlener Befehl)
 
-Nur die nötigen Services starten (ohne Report/Media und planning/order für den HR-Betrieb):
+Alle Backend-Services inkl. Planning, Order und Report/Media starten:
 
 ```bash
-docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service time-service billing-service absence-vacation-service api-gateway -d
+docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service order-service planning-service time-service billing-service absence-vacation-service report-media-service api-gateway -d
 ```
 
 Das `-d` startet die Container im Hintergrund. Der erste Build dauert mehrere Minuten.
