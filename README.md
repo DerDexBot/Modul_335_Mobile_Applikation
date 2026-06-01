@@ -7,9 +7,14 @@ Klasse: Modul 335
 
 ## Dokumentation
 
+## Dokumentation
+
 | Dokument | Beschreibung |
 |---|---|
-| [User Stories – HR](docs/userstories_hr.md) | 10 User Stories mit Akzeptanzkriterien für die HR-Rolle |
+| [User Stories – HR](docs/userstories_hr.md) | User Stories mit Akzeptanzkriterien für die HR-Rolle |
+| [User Stories – Schichtleiter](docs/userstories_schichtleiter.md) | User Stories mit Akzeptanzkriterien für die Schichtleiter-Rolle |
+| [User Stories – Mitarbeiter](docs/userstories_mitarbeiter.md) | User Stories mit Akzeptanzkriterien für die Mitarbeiter-Rolle |
+| [User Stories – Admin](docs/userstories_admin.md) | User Stories mit Akzeptanzkriterien für die Admin-Rolle |
 
 ---
 
