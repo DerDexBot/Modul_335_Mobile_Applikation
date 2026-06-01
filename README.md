@@ -18,64 +18,85 @@ Klasse: Modul 335
 
 ## Quick Start – System starten & testen
 
-### Schritt 1 – Voraussetzungen
+### Voraussetzungen
 
 - **Docker Desktop** installiert und gestartet
-- **Node.js** (v18 oder neuer) installiert
-- Ports **8000–8008**, **3306**, **27017**, **8080**, **8081** sind frei
+- Ports **3001–3003**, **8000–8008**, **3306**, **27017**, **8080**, **8081** sind frei
 
 ---
 
-### Schritt 2 – Backend-Container starten
+### Schritt 1 – Alles starten
 
-Im Stammverzeichnis des Projekts (`Modul_335_Mobile_Applikation/`) folgenden Befehl ausführen:
-
-```bash
-docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service order-service planning-service time-service billing-service absence-vacation-service report-media-service api-gateway -d
-```
-
-> **Hinweis:** Der erste Start dauert einige Minuten, da Docker alle Images baut und Maven-Abhängigkeiten herunterlädt. Bei weiteren Starts ohne `--build` geht es viel schneller.
-
-Der MySQL-Container führt beim ersten Start automatisch `database/mysql/init.sql` aus (Schema + Rollen-Seed). Der `user-role-service` legt beim Start die vier Testbenutzer an, **sobald MySQL bereit ist** (Health-Check).
-
-**Container-Status prüfen:**
+Im Stammverzeichnis des Projekts (`Modul_335_Mobile_Applikation/`) einmalig ausführen:
 
 ```bash
-docker-compose ps
+docker compose up --build -d
 ```
 
-Alle Container sollten den Status `running` haben. `mysql-db` muss `healthy` sein, bevor die Services starten.
+Das startet **alle** Container auf einmal: Datenbanken, alle Backend-Services, alle drei Web-Frontends und die Datenbank-Admins.
+
+> **Erster Start:** dauert 3–5 Minuten, da Docker alle Images baut und Maven-Abhängigkeiten lädt.  
+> **Folgestarts** (ohne Code-Änderungen): `docker compose up -d` reicht, geht in Sekunden.
+
+Der `user-role-service` legt beim ersten Start die vier Demo-Accounts automatisch an, sobald MySQL `healthy` meldet.
 
 ---
 
-### Schritt 3 – HR-Frontend starten (Entwicklungsmodus)
+### Schritt 2 – Browser-Zugänge
 
-```bash
-cd frontend/hr-web
-npm install
-npm run dev
-```
-
-Das Frontend ist anschliessend unter **http://localhost:5173** erreichbar.
+| Anwendung | URL | Beschreibung |
+|---|---|---|
+| **Admin-Frontend** | http://localhost:3001 | Rollen, Benutzerverwaltung, Aufträge |
+| **HR-Frontend** | http://localhost:3002 | Schichtleiter anlegen, Stunden, Rechnungen, Absenzen |
+| **Schichtleiter-Frontend** | http://localhost:3003 | Arbeitspläne, Schichten, Kalender |
+| **phpMyAdmin** | http://localhost:8080 | MySQL-Datenbankadmin |
+| **Mongo Express** | http://localhost:8081 | MongoDB-Admin (kein Login nötig) |
 
 ---
 
-### Schritt 4 – Einloggen
+### Schritt 3 – Einloggen
 
-Alle Frontends verwenden denselben Login-Endpunkt über den API-Gateway (`localhost:8000`).
+Alle Frontends verwenden denselben Login-Endpunkt über den API-Gateway (`localhost:8000`). Die Demo-Accounts werden beim Start automatisch angelegt.
 
-**Test-Zugangsdaten:**
+| Benutzername | Passwort | Rolle | Frontend |
+|---|---|---|---|
+| `admin` | `password` | Admin | http://localhost:3001 |
+| `hr.mueller` | `password` | HR | http://localhost:3002 |
+| `sl.huber` | `password` | Schichtleiter | http://localhost:3003 |
+| `emp.meier` | `password` | Mitarbeiter | Flutter Mobile App |
 
-| Benutzername | Passwort   | Rolle        | Frontend                         |
-|--------------|------------|--------------|----------------------------------|
-| `hr.mueller` | `password` | HR           | http://localhost:5173 (dev)      |
-| `admin`      | `password` | Admin        | http://localhost:3001 (Docker)   |
-| `sl.huber`   | `password` | Schichtleiter| http://localhost:3003 (Docker)   |
-| `emp.meier`  | `password` | Mitarbeiter  | Flutter Mobile App               |
+> Jedes Frontend prüft nach dem Login die Rolle im JWT. `admin` kann sich z.B. **nicht** im HR-Frontend einloggen — falsche Rolle wird verweigert.
 
-> **Hinweis:** Stimmt die Rolle des Benutzers nicht mit dem aufgerufenen Frontend überein, wird der Login verweigert (z.B. `admin` kann sich nicht im HR-Frontend einloggen).
+---
 
-**Login mit Insomnia / Postman (API direkt):**
+### Schritt 4 – Was kann ich wo tun?
+
+**Admin** → http://localhost:3001
+
+| Seite | Funktion |
+|---|---|
+| Rollen | Benutzer aus der DB anzeigen, Rolle ändern, deaktivieren/aktivieren |
+| Aufträge | Aufträge verwalten (lokal) |
+| HR / Mitarbeiter | Übersicht (lokal) |
+
+**HR** → http://localhost:3002
+
+| Seite | URL | Funktion |
+|---|---|---|
+| Benutzerverwaltung | `/users` | Schichtleiter/Mitarbeiter anlegen, bearbeiten, deaktivieren |
+| Stundenübersicht | `/time` | Gesamtstunden pro Zeitraum, Monatsdetail pro Mitarbeiter |
+| Rechnungen | `/invoices` | Rechnungen erstellen, versenden, als bezahlt markieren |
+| Absenzen & Ferien | `/absences` | Ferienanträge genehmigen/ablehnen, Absenzen erfassen |
+
+**Schichtleiter** → http://localhost:3003
+
+| Seite | URL | Funktion |
+|---|---|---|
+| Arbeitsplanung | `/planning` | Arbeitspläne erstellen, Schichten hinzufügen, veröffentlichen |
+
+---
+
+### Schritt 5 – API direkt testen (optional)
 
 ```
 POST http://localhost:8000/api/auth/login
@@ -97,66 +118,32 @@ Antwort:
 }
 ```
 
-Den `token`-Wert als `Authorization: Bearer <token>` Header für alle weiteren Anfragen verwenden. `userId` wird von Web- und Mobile-Frontend verwendet, damit Arbeitspläne und Kalender dem eingeloggten Benutzer zugeordnet werden können.
+Den `token`-Wert als `Authorization: Bearer <token>` Header für alle weiteren API-Anfragen verwenden.
 
 ---
 
-### Schritt 5 – HR-Frontend verwenden
-
-Nach dem Login mit `hr.mueller` / `password` erscheint das Dashboard mit vier Kacheln:
-
-| Seite                  | URL            | Funktion                                              |
-|------------------------|----------------|-------------------------------------------------------|
-| Benutzerverwaltung     | `/users`       | Mitarbeiter anlegen, bearbeiten, deaktivieren         |
-| Stundenübersicht       | `/time`        | Gesamtstunden pro Zeitraum, Monatsdetail pro Mitarbeiter |
-| Rechnungen             | `/invoices`    | Rechnungen erstellen, versenden, als bezahlt markieren |
-| Absenzen & Ferien      | `/absences`    | Ferienanträge genehmigen oder ablehnen                |
-
----
-
-### Schritt 6 – Schichtleiter-Frontend starten und verwenden
-
-Im Entwicklungsmodus:
+### Container verwalten
 
 ```bash
-cd frontend/shiftlead-web
-npm install
-npm run dev
+# Status aller Container anzeigen
+docker compose ps
+
+# Logs eines bestimmten Services live verfolgen
+docker compose logs -f api-gateway
+docker compose logs -f user-role-service
+docker compose logs -f hr-web
+
+# Alle Container stoppen (Daten bleiben erhalten)
+docker compose down
+
+# Einzelnen Service nach Code-Änderung neu bauen und starten
+docker compose up --build user-role-service -d
+
+# Kompletter Reset – stoppt alles und löscht alle Datenbankdaten
+docker compose down -v
 ```
 
-Alternativ ist das Schichtleiter-Web via Docker unter **http://localhost:3003** erreichbar, wenn der entsprechende Container gestartet wird.
-
-Nach dem Login mit `sl.huber` / `password` kann der Schichtleiter unter `/planning`:
-
-| Funktion | Beschreibung |
-|---|---|
-| Arbeitsplan erstellen | Titel, Zeitraum und HR-Stundenkontingent erfassen |
-| Schichten hinzufügen | Mitarbeiter, Datum, Start-/Endzeit, Auftrag-ID und Notiz erfassen |
-| Stunden prüfen | Geplante Stunden, Reststunden, Überplanung und Unterplanung sehen |
-| Arbeitsplan veröffentlichen | Schichten für die Mobile-App sichtbar machen |
-
----
-
-### Datenbank-Admins (optional)
-
-| Tool          | URL                        | Zugangsdaten                        |
-|---------------|----------------------------|-------------------------------------|
-| phpMyAdmin    | http://localhost:8080      | Benutzer: `workforce` / `workforce` |
-| Mongo Express | http://localhost:8081      | Kein Login nötig                    |
-
----
-
-### Container stoppen
-
-```bash
-docker-compose down
-```
-
-**Kompletter Reset** (löscht auch alle Datenbankdaten):
-
-```bash
-docker-compose down -v
-```
+> Nach `docker compose down -v` werden beim nächsten `docker compose up --build -d` alle Tabellen, Rollen und Demo-Accounts automatisch neu angelegt.
 
 ---
 
@@ -223,12 +210,12 @@ Das System besteht aus:
 
 ## 3. Rollen & Zugänge
 
-| Rolle        | Zugang                                    | JWT-Rolle    | Test-Benutzer  | Passwort   |
-|--------------|-------------------------------------------|--------------|----------------|------------|
-| Admin        | Admin Web – http://localhost:3001 (Docker)| `ADMIN`      | `admin`        | `password` |
-| HR           | HR Web – http://localhost:5173 (dev)      | `HR`         | `hr.mueller`   | `password` |
-| Schichtleiter| Schichtleiter Web – http://localhost:3003 | `SHIFT_LEAD` | `sl.huber`     | `password` |
-| Mitarbeiter  | Flutter Mobile App                        | `EMPLOYEE`   | `emp.meier`    | `password` |
+| Rolle        | Zugang                               | JWT-Rolle    | Test-Benutzer  | Passwort   |
+|--------------|--------------------------------------|--------------|----------------|------------|
+| Admin        | Admin Web – http://localhost:3001    | `ADMIN`      | `admin`        | `password` |
+| HR           | HR Web – http://localhost:3002       | `HR`         | `hr.mueller`   | `password` |
+| Schichtleiter| Schichtleiter Web – http://localhost:3003 | `SHIFT_LEAD` | `sl.huber` | `password` |
+| Mitarbeiter  | Flutter Mobile App                   | `EMPLOYEE`   | `emp.meier`    | `password` |
 
 Jedes Frontend prüft nach dem Login die Rolle im JWT-Token. Stimmt die Rolle nicht überein, wird der Zugang verweigert.
 
@@ -676,90 +663,98 @@ Collection: `media_reports`
 ### Voraussetzungen
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installiert und gestartet
-- [Node.js](https://nodejs.org/) v18 oder neuer (für die Frontend-Entwicklung)
 - Ports **3001–3003**, **8000–8008**, **3306**, **27017**, **8080**, **8081** sind frei
+- Node.js v18+ nur nötig, wenn Frontends im Entwicklungsmodus (ausserhalb Docker) gestartet werden
 
 ---
 
-### Backend starten (empfohlener Befehl)
-
-Alle Backend-Services inkl. Planning, Order und Report/Media starten:
+### Alles starten (empfohlener Befehl)
 
 ```bash
-docker-compose up --build mysql-db phpmyadmin mongo-db mongo-express auth-service user-role-service order-service planning-service time-service billing-service absence-vacation-service report-media-service api-gateway -d
+docker compose up --build -d
 ```
 
-Das `-d` startet die Container im Hintergrund. Der erste Build dauert mehrere Minuten.
+Startet alle Container auf einmal: Datenbanken, alle 8 Backend-Services, alle 3 Frontends und die DB-Admins.
 
-**Warum `--build`?** Beim ersten Start oder nach Code-Änderungen am Backend muss Docker die JAR-Datei neu kompilieren. Ohne `--build` wird das zuletzt gebaute Image verwendet.
+| Flag | Bedeutung |
+|---|---|
+| `--build` | Bilder neu bauen (nötig beim ersten Start und nach Code-Änderungen) |
+| `-d` | Hintergrundmodus (Terminal bleibt frei) |
 
-**Container-Status prüfen:**
+> Folgestarts ohne Code-Änderungen: `docker compose up -d` (kein `--build`, startet in Sekunden).
+
+---
+
+### Container-Status prüfen
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
-`mysql-db` muss den Status `healthy` haben, bevor die Backend-Services starten. Ist das nicht der Fall, warten und nochmals prüfen.
+`mysql-db` muss den Status `healthy` haben, bevor die Backend-Services bereit sind. Wenn ein Service `unhealthy` zeigt, Logs prüfen.
 
-**Logs eines Services anzeigen:**
+---
+
+### Logs anzeigen
 
 ```bash
-docker-compose logs -f user-role-service
+# Live-Log eines Services
+docker compose logs -f api-gateway
+docker compose logs -f user-role-service
+docker compose logs -f absence-vacation-service
+
+# Letzten 50 Zeilen ohne Live-Follow
+docker compose logs --tail=50 hr-web
 ```
 
 ---
 
-### Frontend starten (Entwicklungsmodus)
+### Einzelnen Service neu bauen (nach Code-Änderung)
 
 ```bash
-cd frontend/hr-web
-npm install
-npm run dev
+# Ein Service
+docker compose up --build user-role-service -d
+
+# Mehrere Services gleichzeitig
+docker compose up --build auth-service user-role-service absence-vacation-service -d
 ```
-
-Erreichbar unter: **http://localhost:5173**
-
-Beim ersten Start einmalig `npm install` ausführen. Danach reicht `npm run dev`.
 
 ---
 
-### Nur Datenbanken starten (für lokale Entwicklung mit IntelliJ)
+### Nur Datenbanken starten (für IntelliJ-Entwicklung)
 
 ```bash
-docker-compose up mysql-db mongo-db phpmyadmin mongo-express -d
+docker compose up mysql-db mongo-db phpmyadmin mongo-express -d
 ```
 
-Danach können Spring-Boot-Services direkt aus IntelliJ gestartet werden. Sie verbinden sich dann gegen die lokale MySQL/MongoDB auf `localhost`. IntelliJ muss dafür das Profil `local` verwenden (`SPRING_PROFILES_ACTIVE=local`).
-
----
-
-### Einzelnen Service nach Code-Änderung neu bauen
-
-```bash
-docker-compose up --build auth-service -d
-```
-
-Mehrere Services auf einmal:
-
-```bash
-docker-compose up --build auth-service user-role-service -d
-```
+Spring-Boot-Services können dann direkt aus IntelliJ gestartet werden (`SPRING_PROFILES_ACTIVE=local`).
 
 ---
 
 ### Alle Container stoppen
 
 ```bash
-docker-compose down
+# Stoppen – Daten bleiben erhalten
+docker compose down
+
+# Stoppen + alle Volumes löschen (DB-Reset)
+docker compose down -v
 ```
 
-### Kompletter Reset (löscht alle Datenbankdaten)
+> Nach `docker compose down -v`: beim nächsten `docker compose up --build -d` werden Schema, Rollen und alle Demo-Accounts automatisch neu angelegt.
 
-```bash
-docker-compose down -v
-```
+---
 
-Nach einem Volume-Reset werden beim nächsten Start alle Tabellen und Seed-Daten neu angelegt.
+### Browser-Zugänge (Übersicht)
+
+| Anwendung | URL | Login |
+|---|---|---|
+| Admin-Frontend | http://localhost:3001 | `admin` / `password` |
+| HR-Frontend | http://localhost:3002 | `hr.mueller` / `password` |
+| Schichtleiter-Frontend | http://localhost:3003 | `sl.huber` / `password` |
+| phpMyAdmin | http://localhost:8080 | `workforce` / `workforce` |
+| Mongo Express | http://localhost:8081 | *(kein Login)* |
+| API Gateway | http://localhost:8000 | *(direkte API-Calls)* |
 
 ---
 
