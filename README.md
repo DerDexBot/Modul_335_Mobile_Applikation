@@ -13,6 +13,8 @@ Klasse: Modul 335
 | [User Stories – Schichtleiter](docs/userstories_schichtleiter.md) | User Stories mit Akzeptanzkriterien für die Schichtleiter-Rolle |
 | [User Stories – Mitarbeiter](docs/userstories_mitarbeiter.md) | User Stories mit Akzeptanzkriterien für die Mitarbeiter-Rolle |
 | [User Stories – Admin](docs/userstories_admin.md) | User Stories mit Akzeptanzkriterien für die Admin-Rolle |
+| [Tests & CI-Pipeline](docs/testing-and-ci.md) | Wie Tests ausgeführt werden, was die CI-Pipeline prüft, was bei Fehlern zu tun ist |
+| [Testbericht](docs/testreport.md) | Ergebnisse des automatischen API-Testlaufs (54/54 Tests bestanden) |
 
 ---
 
