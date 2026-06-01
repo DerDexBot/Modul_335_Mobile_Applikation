@@ -113,8 +113,8 @@ public class AbsenceController {
     @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
     public ResponseEntity<AbsenceResponse> approve(
             @PathVariable Long id,
-            @RequestBody ReviewRequest request) {
-        return ResponseEntity.ok(absenceService.approve(id, request));
+            @RequestBody(required = false) ReviewRequest request) {
+        return ResponseEntity.ok(absenceService.approve(id, request != null ? request : new ReviewRequest(null, null)));
     }
 
     /**
