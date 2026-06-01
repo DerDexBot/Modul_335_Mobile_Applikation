@@ -46,8 +46,11 @@ const emptyOrder = {
 };
 
 const emptyHr = {
-  name: '',
+  firstName: '',
+  lastName: '',
+  username: '',
   email: '',
+  password: '',
   status: 'aktiv',
   responsibilities: [],
 };
@@ -82,8 +85,11 @@ const emptyWageRule = {
 };
 
 const emptyEmployee = {
-  name: '',
+  firstName: '',
+  lastName: '',
+  username: '',
   email: '',
+  password: '',
   personnelNo: '',
   status: 'aktiv',
   mobileAccess: true,
@@ -272,14 +278,21 @@ export default function DashboardPage() {
     if (active === 'hr')        fetchApiHrUsers();
   }, [active]);
 
+  useEffect(() => {
+    fetchApiUsers();
+    fetchApiEmployees();
+  }, []);
+
   const notices = useMemo(() => buildNotices(state), [state]);
 
   const stats = useMemo(() => ({
     openOrders: state.orders.filter(order => !['abgeschlossen', 'storniert'].includes(order.status)).length,
-    activeEmployees: state.employees.filter(employee => employee.status === 'aktiv').length,
+    activeEmployees: apiEmployees.length > 0
+      ? apiEmployees.filter(e => e.active).length
+      : state.employees.filter(employee => employee.status === 'aktiv').length,
     timeWarnings: state.timeEntries.filter(entry => entry.status !== 'plausibel').length,
     openAbsences: state.absences.filter(absence => absence.status === 'offen').length,
-  }), [state]);
+  }), [state, apiEmployees]);
 
   const conceptOptions = state.concepts.map(concept => ({ value: concept.id, label: concept.name }));
 
@@ -375,24 +388,33 @@ export default function DashboardPage() {
     });
   };
 
-  const saveHrUser = event => {
+  const saveHrUser = async event => {
     event.preventDefault();
-    if (!requireValues(hrForm, [['name', 'Name'], ['email', 'E-Mail']])) return;
-    const id = editing.hrId || makeId('hr');
-    commitChange(next => {
-      const payload = { ...hrForm, id };
-      const index = next.hrUsers.findIndex(user => user.id === id);
-      if (index >= 0) next.hrUsers[index] = payload;
-      else next.hrUsers.unshift(payload);
-    }, {
-      area: 'HR',
-      action: editing.hrId ? 'Aktualisiert' : 'Erstellt',
-      record: hrForm.name,
-      detail: `Zuständigkeiten: ${hrForm.responsibilities.join(', ') || 'keine'}`,
-    });
-    setHrForm(emptyHr);
-    setEditing(current => ({ ...current, hrId: null }));
-    showMessage('success', 'HR-Benutzer gespeichert.');
+    if (!requireValues(hrForm, [
+      ['firstName', 'Vorname'],
+      ['lastName', 'Nachname'],
+      ['username', 'Benutzername'],
+      ['email', 'E-Mail'],
+      ['password', 'Passwort'],
+    ])) return;
+    try {
+      await api.post('/api/users', {
+        firstName: hrForm.firstName,
+        lastName: hrForm.lastName,
+        username: hrForm.username,
+        email: hrForm.email,
+        password: hrForm.password,
+        roleName: 'HR',
+        active: hrForm.status === 'aktiv',
+      });
+      showMessage('success', 'HR-Benutzer angelegt.');
+      setHrForm(emptyHr);
+      setEditing(current => ({ ...current, hrId: null }));
+      fetchApiHrUsers();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || 'Fehler beim Anlegen des HR-Benutzers.';
+      showMessage('error', String(msg));
+    }
   };
 
   const editHrUser = user => {
@@ -483,32 +505,33 @@ export default function DashboardPage() {
     showMessage('success', 'Lohnregel gespeichert.');
   };
 
-  const saveEmployee = event => {
+  const saveEmployee = async event => {
     event.preventDefault();
-    if (!requireValues(employeeForm, [['name', 'Name'], ['email', 'E-Mail'], ['personnelNo', 'Personalnummer']])) return;
-    const duplicate = state.employees.some(employee =>
-      employee.personnelNo === employeeForm.personnelNo && employee.id !== editing.employeeId
-    );
-    if (duplicate) {
-      showMessage('error', 'Diese Personalnummer existiert bereits.');
-      return;
+    if (!requireValues(employeeForm, [
+      ['firstName', 'Vorname'],
+      ['lastName', 'Nachname'],
+      ['username', 'Benutzername'],
+      ['email', 'E-Mail'],
+      ['password', 'Passwort'],
+    ])) return;
+    try {
+      await api.post('/api/users', {
+        firstName: employeeForm.firstName,
+        lastName: employeeForm.lastName,
+        username: employeeForm.username,
+        email: employeeForm.email,
+        password: employeeForm.password,
+        roleName: 'EMPLOYEE',
+        active: employeeForm.status === 'aktiv',
+      });
+      showMessage('success', 'Mitarbeiter angelegt.');
+      setEmployeeForm(emptyEmployee);
+      setEditing(current => ({ ...current, employeeId: null }));
+      fetchApiEmployees();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || 'Fehler beim Anlegen des Mitarbeiters.';
+      showMessage('error', String(msg));
     }
-    const id = editing.employeeId || makeId('emp');
-    commitChange(next => {
-      const payload = { ...employeeForm, id };
-      if (payload.status !== 'aktiv') payload.mobileAccess = false;
-      const index = next.employees.findIndex(employee => employee.id === id);
-      if (index >= 0) next.employees[index] = payload;
-      else next.employees.unshift(payload);
-    }, {
-      area: 'Mitarbeiter',
-      action: editing.employeeId ? 'Aktualisiert' : 'Erstellt',
-      record: employeeForm.name,
-      detail: `Mobile Nutzung ${employeeForm.mobileAccess ? 'aktiv' : 'inaktiv'}`,
-    });
-    setEmployeeForm(emptyEmployee);
-    setEditing(current => ({ ...current, employeeId: null }));
-    showMessage('success', 'Mitarbeiter gespeichert.');
   };
 
   const setUserStatus = async (user, newStatus) => {
@@ -591,15 +614,15 @@ export default function DashboardPage() {
   const searchRows = useMemo(() => {
     const rows = [
       ...state.orders.map(order => ({ type: 'Auftrag', title: order.title, detail: `${order.company}, ${order.status}`, target: 'orders' })),
-      ...state.employees.map(employee => ({ type: 'Mitarbeiter', title: employee.name, detail: `${employee.personnelNo}, ${employee.status}`, target: 'employees' })),
-      ...state.hrUsers.map(user => ({ type: 'HR', title: user.name, detail: `${user.email}, ${user.status}`, target: 'hr' })),
+      ...apiEmployees.map(e => ({ type: 'Mitarbeiter', title: `${e.firstName} ${e.lastName}`, detail: `${e.username}, ${e.active ? 'aktiv' : 'deaktiviert'}`, target: 'employees' })),
+      ...apiHrUsers.map(user => ({ type: 'HR', title: `${user.firstName} ${user.lastName}`, detail: `${user.email}, ${user.active ? 'aktiv' : 'deaktiviert'}`, target: 'hr' })),
       ...state.reports.map(report => ({ type: 'Rapport', title: findName(state.employees, report.employeeId), detail: `${findName(state.orders, report.orderId, '')}, ${report.status}`, target: 'reports' })),
     ];
     return rows
       .filter(row => filters.searchType === 'alle' || row.type === filters.searchType)
       .filter(row => matchesSearch(row, search))
       .sort((a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title));
-  }, [filters.searchType, search, state]);
+  }, [filters.searchType, search, state, apiEmployees, apiHrUsers]);
 
   const reportRows = useMemo(() => {
     const orderTitle = id => state.orders.find(order => order.id === id)?.title || 'Unbekannt';
@@ -846,34 +869,17 @@ export default function DashboardPage() {
               <form className="panel" onSubmit={saveHrUser}>
                 <h3>{editing.hrId ? 'HR-Benutzer bearbeiten' : 'HR-Benutzer erstellen'}</h3>
                 <div className="form-grid">
-                  <Field label="Name"><input value={hrForm.name} onChange={event => setHrForm({ ...hrForm, name: event.target.value })} /></Field>
+                  <Field label="Vorname"><input value={hrForm.firstName} onChange={event => setHrForm({ ...hrForm, firstName: event.target.value })} /></Field>
+                  <Field label="Nachname"><input value={hrForm.lastName} onChange={event => setHrForm({ ...hrForm, lastName: event.target.value })} /></Field>
+                  <Field label="Benutzername"><input value={hrForm.username} onChange={event => setHrForm({ ...hrForm, username: event.target.value })} /></Field>
                   <Field label="E-Mail"><input type="email" value={hrForm.email} onChange={event => setHrForm({ ...hrForm, email: event.target.value })} /></Field>
+                  <Field label="Passwort"><input type="password" value={hrForm.password} onChange={event => setHrForm({ ...hrForm, password: event.target.value })} /></Field>
                   <Field label="Status">
                     <select value={hrForm.status} onChange={event => setHrForm({ ...hrForm, status: event.target.value })}>
                       <option value="aktiv">aktiv</option>
                       <option value="deaktiviert">deaktiviert</option>
                     </select>
                   </Field>
-                  <div className="field full">
-                    <span className="muted">Zuständigkeiten</span>
-                    <div className="check-grid">
-                      {RESPONSIBILITIES.map(item => (
-                        <label className="check-row" key={item}>
-                          <input
-                            type="checkbox"
-                            checked={hrForm.responsibilities.includes(item)}
-                            onChange={event => setHrForm({
-                              ...hrForm,
-                              responsibilities: event.target.checked
-                                ? [...hrForm.responsibilities, item]
-                                : hrForm.responsibilities.filter(value => value !== item),
-                            })}
-                          />
-                          {item}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
                 </div>
                 <div className="actions" style={{ marginTop: 14 }}>
                   <button className="primary-button" type="submit">Speichern</button>
@@ -1140,8 +1146,11 @@ export default function DashboardPage() {
               <form className="panel" onSubmit={saveEmployee}>
                 <h3>{editing.employeeId ? 'Mitarbeiter bearbeiten' : 'Mitarbeiter erfassen'}</h3>
                 <div className="form-grid">
-                  <Field label="Name"><input value={employeeForm.name} onChange={event => setEmployeeForm({ ...employeeForm, name: event.target.value })} /></Field>
+                  <Field label="Vorname"><input value={employeeForm.firstName} onChange={event => setEmployeeForm({ ...employeeForm, firstName: event.target.value })} /></Field>
+                  <Field label="Nachname"><input value={employeeForm.lastName} onChange={event => setEmployeeForm({ ...employeeForm, lastName: event.target.value })} /></Field>
+                  <Field label="Benutzername"><input value={employeeForm.username} onChange={event => setEmployeeForm({ ...employeeForm, username: event.target.value })} /></Field>
                   <Field label="E-Mail"><input type="email" value={employeeForm.email} onChange={event => setEmployeeForm({ ...employeeForm, email: event.target.value })} /></Field>
+                  <Field label="Passwort"><input type="password" value={employeeForm.password} onChange={event => setEmployeeForm({ ...employeeForm, password: event.target.value })} /></Field>
                   <Field label="Personalnummer"><input value={employeeForm.personnelNo} onChange={event => setEmployeeForm({ ...employeeForm, personnelNo: event.target.value })} /></Field>
                   <Field label="Konzept">
                     <select value={employeeForm.conceptId} onChange={event => setEmployeeForm({ ...employeeForm, conceptId: event.target.value })}>

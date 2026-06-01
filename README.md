@@ -171,6 +171,8 @@ docker compose down -v && docker compose up --build -d
 | Login leitet sofort zurück auf `/login` | 401-Response vom Login-Endpoint triggerte früher einen Hard-Redirect | Behoben in `api.js` aller drei Frontends (Interceptor prüft jetzt ob Request = Login-Endpoint) |
 | Leere Seite ohne Login-Formular | `vite.config.js` fehlte → JSX wurde nicht verarbeitet | Behoben, `vite.config.js` ist vorhanden |
 | CORS-Fehler 403 | Gateway hatte kein `globalcors`, Services gaben doppelte CORS-Header | Behoben: Gateway verwaltet CORS, Services haben `cors.disable()` |
+| Admin zeigt andere User als HR-Frontend | `adminSeed.js` enthielt lokale Dummy-User (Amir Suter, Lea Baumann etc.); HR- und Mitarbeiter-Formulare schrieben in `localStorage` statt in die DB | Behoben in `DashboardPage.jsx`: `saveHrUser` und `saveEmployee` rufen jetzt `POST /api/users` auf; Suche und Stats verwenden echte API-Daten |
+| Nach Wechsel auf neuen Rechner zeigt Admin noch alte Daten | Browser-`localStorage` vom alten Rechner enthält veralteten Admin-State | DevTools → Application → Local Storage → `planifywork-admin-state-v1` löschen, Seite neu laden |
 
 ---
 
@@ -567,24 +569,33 @@ Content-Type: application/json
 
 ### Admin Web · Port 3001
 
-Bereits vorhanden: Login, Dashboard mit Navigation
+**Implementiert:**
+- Login mit Rollenprüfung `ADMIN`
+- Dashboard mit vollständiger Navigation (Übersicht, Aufträge, HR, Firmenkonzepte, Lohn und Stunden, Mitarbeiter, Rollen, Berichte, Suche, Audit-Log)
+- Rollen-Tab: alle Benutzer aus der DB anzeigen, Rolle ändern, deaktivieren/aktivieren (`GET /api/users`, `PUT /api/users/:id`)
+- HR-Tab: HR-Benutzer aus DB anzeigen und neu anlegen (`GET /api/users?role=HR`, `POST /api/users`)
+- Mitarbeiter-Tab: Mitarbeiter aus DB anzeigen und neu anlegen (`GET /api/users?role=EMPLOYEE`, `POST /api/users`)
+- Aufträge, Firmenkonzepte, Stunden-/Lohnregeln, Berichte, Audit-Log: lokal im Browser (kein Backend für diese Bereiche noch vorhanden)
+- Suche und Übersichts-Statistiken verwenden echte DB-Daten für Benutzer/Mitarbeiter
+
+> **Hinweis:** Aufträge, Firmenkonzepte, Stunden- und Lohnregeln werden aktuell im `localStorage` des Browsers gespeichert, da die entsprechenden Backend-Services (Order Service, etc.) noch nicht vollständig implementiert sind. Diese Daten sind gerätespezifisch und werden bei `localStorage`-Reset zurückgesetzt.
 
 **Noch zu implementieren:**
-- Auftrags-Verwaltungsseite (`/orders`)
-- HR-Benutzer-Verwaltungsseite (`/hr`)
+- Aufträge über den Order Service speichern (`POST /api/orders`)
 - Firmendaten-Seite (`/company`)
-- Lohn/Stunden-Übersicht (`/salary`)
+- Stundenübersicht aus dem Time Service laden
 
 ### HR Web · Port 3002
 
-Bereits vorhanden: Login, Dashboard mit Navigation
+**Implementiert:**
+- Login mit Rollenprüfung `HR`
+- Benutzerverwaltung (`/users`): Schichtleiter/Mitarbeiter anlegen, bearbeiten, deaktivieren
+- Stundenübersicht (`/time`): Gesamtstunden aller Mitarbeiter, Monatsdetail pro Mitarbeiter
+- Rechnungen (`/invoices`): Erstellen, versenden, als bezahlt markieren (DRAFT → SENT → PAID)
+- Absenzen & Ferien (`/absences`): Ferienanfragen genehmigen/ablehnen, Absenzen erfassen und verwalten
 
 **Noch zu implementieren:**
-- Schichtleiter-Verwaltung (`/shift-leads`)
-- Total-Stunden-Ansicht (`/hours`)
-- Rechnungs-Erstellung (`/invoices`)
-- Stunden-Auswertungen (`/reports`)
-- Absenzen/Ferien-Verwaltung (`/absences`)
+- Abwesenheitskalender (`/absences/calendar`) — Backend-Endpunkt vorhanden, Frontend-Widget fehlt (US-HR-10)
 
 ### Schichtleiter Web · Port 3003
 
