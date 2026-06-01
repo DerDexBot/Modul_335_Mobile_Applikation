@@ -1,55 +1,78 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import api from '../services/api';
 
 const CARDS = [
-  { to: '/planning', icon: '📅', title: 'Arbeitsplanung', desc: 'Arbeitspläne erstellen, Schichten planen und veröffentlichen' },
-  { to: '/orders', icon: '📦', title: 'Aufträge', desc: 'Zugewiesene Aufträge und Auftragsbezug für Schichten' },
-  { to: '/notes', icon: '📝', title: 'Notizen', desc: 'Notizen zu Schichten und Aufträgen dokumentieren' },
+  { to: '/planning', title: 'Arbeitsplanung',   desc: 'Arbeitspläne erstellen, Schichten planen und veröffentlichen' },
+  { to: '/time',     title: 'Arbeitszeiten',     desc: 'Check-in / Check-out der Mitarbeiter einsehen und auswerten' },
+  { to: '/orders',   title: 'Aufträge',          desc: 'Zugewiesene Aufträge und Auftragsbezüge verwalten' },
+  { to: '/notes',    title: 'Notizen',           desc: 'Schicht- und Auftragsnotizen im Überblick' },
 ];
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const username = localStorage.getItem('username') || 'Schichtleiter';
+  const shiftLeadId = localStorage.getItem('userId');
+  const [stats, setStats] = useState({ plans: 0, published: 0, employees: 0 });
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userId');
-    navigate('/login');
-  };
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [plansRes, empRes] = await Promise.all([
+          api.get('/api/planning/workplans', { params: { shiftLeadId } }),
+          api.get('/api/users', { params: { role: 'EMPLOYEE' } }),
+        ]);
+        const plans = plansRes.data || [];
+        const employees = empRes.data || [];
+        setStats({
+          plans: plans.length,
+          published: plans.filter(p => p.status === 'PUBLISHED').length,
+          employees: employees.filter(e => e.active).length,
+        });
+      } catch {
+        // stats bleiben auf 0
+      }
+    };
+    loadStats();
+  }, []);
 
   return (
-    <div style={{ padding: 32, maxWidth: 1000, margin: '0 auto' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, gap: 16 }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Schichtleiter Dashboard</h1>
-          <p style={{ margin: '6px 0 0', color: '#64748b' }}>Angemeldet als {username}</p>
+    <Layout>
+      <div className="sl-page">
+        <div className="sl-page-header">
+          <h1>Übersicht</h1>
+          <p>Aktuelle Kennzahlen und Schnellzugriff auf alle Bereiche.</p>
         </div>
-        <button onClick={logout} style={btnSecondary}>Abmelden</button>
-      </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 20 }}>
-        {CARDS.map(card => (
-          <Link key={card.to} to={card.to} style={{ textDecoration: 'none' }}>
-            <article style={cardStyle}>
-              <div style={{ fontSize: 34, marginBottom: 14 }}>{card.icon}</div>
-              <h2 style={{ fontSize: 18, margin: '0 0 8px', color: '#0f172a' }}>{card.title}</h2>
-              <p style={{ fontSize: 14, color: '#64748b', margin: 0, lineHeight: 1.5 }}>{card.desc}</p>
-            </article>
-          </Link>
-        ))}
+        <div className="metric-grid" style={{ marginBottom: 28 }}>
+          <div className="metric-card">
+            <strong>{stats.plans}</strong>
+            <span>Arbeitspläne gesamt</span>
+          </div>
+          <div className="metric-card">
+            <strong>{stats.published}</strong>
+            <span>davon veröffentlicht</span>
+          </div>
+          <div className="metric-card">
+            <strong>{stats.employees}</strong>
+            <span>aktive Mitarbeiter</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {CARDS.map(card => (
+            <button
+              key={card.to}
+              className="panel"
+              onClick={() => navigate(card.to)}
+              style={{ textAlign: 'left', cursor: 'pointer', border: '1px solid #d9e1e8' }}
+            >
+              <h3 style={{ margin: '0 0 8px', color: '#0f172a' }}>{card.title}</h3>
+              <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{card.desc}</p>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
-
-const cardStyle = {
-  height: '100%',
-  padding: 24,
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  background: '#fff',
-  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.06)',
-};
-
-const btnSecondary = { padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: 14 };

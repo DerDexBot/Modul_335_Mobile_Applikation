@@ -1,20 +1,32 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
 
 export default function NotesPage() {
+  const navigate = useNavigate();
+
   return (
-    <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
-      <Link to="/dashboard" style={{ color: '#475569', fontSize: 14, textDecoration: 'none' }}>← Dashboard</Link>
-      <section style={panelStyle}>
-        <h1 style={{ marginTop: 0 }}>Notizen</h1>
-        <p style={{ color: '#64748b', lineHeight: 1.6 }}>
-          Notizen werden aktuell direkt pro Schicht im Arbeitsplan gespeichert. Eine separate Notizen-Übersicht
-          kann später alle Schicht- und Auftragsnotizen gesammelt anzeigen.
-        </p>
-        <Link to="/planning" style={buttonLink}>Zur Arbeitsplanung</Link>
-      </section>
-    </div>
+    <Layout>
+      <div className="sl-page">
+        <div className="sl-page-header">
+          <h1>Notizen</h1>
+          <p>Schicht- und Auftragsnotizen · US-SL-011</p>
+        </div>
+
+        <div className="panel">
+          <div className="empty-state">
+            <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Notizen sind direkt in den Schichten gespeichert</p>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              Jede Schicht im Arbeitsplan kann eine Notiz enthalten. Eine rollenübergreifende
+              Notiz-Übersicht kann hier in einer späteren Version erscheinen.
+            </p>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <button className="primary-button" onClick={() => navigate('/planning')}>
+              Zur Arbeitsplanung
+            </button>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 }
-
-const panelStyle = { marginTop: 18, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 };
-const buttonLink = { display: 'inline-block', marginTop: 10, padding: '9px 14px', background: '#2563eb', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 };

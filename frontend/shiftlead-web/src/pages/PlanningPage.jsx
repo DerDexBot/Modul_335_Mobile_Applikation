@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Layout from '../components/Layout';
 import api from '../services/api';
 
 const today = new Date();
@@ -153,9 +153,9 @@ export default function PlanningPage() {
   const isPublished = selectedWorkPlan?.status === 'PUBLISHED';
 
   return (
-    <div style={{ padding: 32, maxWidth: 1200, margin: '0 auto' }}>
-      <Link to="/dashboard" style={backLink}>← Dashboard</Link>
-      <header style={{ marginTop: 12, marginBottom: 28 }}>
+    <Layout>
+    <div className="sl-page">
+      <header style={{ marginBottom: 28 }}>
         <h1 style={{ margin: 0 }}>Arbeitsplanung</h1>
         <p style={{ color: '#64748b', marginTop: 8 }}>
           Erstelle Arbeitspläne, plane Mitarbeiter ein und veröffentliche fertige Pläne für die Mobile-App.
@@ -413,6 +413,7 @@ export default function PlanningPage() {
         </main>
       </div>
     </div>
+    </Layout>
   );
 }
 
@@ -453,7 +454,6 @@ function formatHours(value) {
   return Number(value || 0).toFixed(2);
 }
 
-const backLink = { color: '#475569', fontSize: 14, textDecoration: 'none' };
 const panelStyle = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 22, boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' };
 const sectionTitle = { margin: '0 0 16px', fontSize: 18 };
 const labelStyle = { display: 'block', fontSize: 13, fontWeight: 700, color: '#334155' };

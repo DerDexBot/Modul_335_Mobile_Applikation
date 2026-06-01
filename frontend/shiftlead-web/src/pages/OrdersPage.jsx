@@ -1,21 +1,28 @@
-import { Link } from 'react-router-dom';
+import Layout from '../components/Layout';
 
 export default function OrdersPage() {
   return (
-    <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
-      <Link to="/dashboard" style={{ color: '#475569', fontSize: 14, textDecoration: 'none' }}>← Dashboard</Link>
-      <section style={panelStyle}>
-        <h1 style={{ marginTop: 0 }}>Aufträge</h1>
-        <p style={{ color: '#64748b', lineHeight: 1.6 }}>
-          Die Auftragsansicht ist vorbereitet. Sobald der Order Service eigene Auftragsdaten liefert,
-          können hier die zugewiesenen Aufträge des Schichtleiters angezeigt werden.
-        </p>
-        <p style={{ color: '#64748b', lineHeight: 1.6 }}>
-          Für die Planung kann eine optionale Auftrag-ID bereits direkt beim Hinzufügen einer Schicht erfasst werden.
-        </p>
-      </section>
-    </div>
+    <Layout>
+      <div className="sl-page">
+        <div className="sl-page-header">
+          <h1>Aufträge</h1>
+          <p>Zugewiesene Aufträge des Schichtleiters · US-SL-007</p>
+        </div>
+
+        <div className="panel">
+          <div className="empty-state">
+            <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Order Service noch nicht verbunden</p>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              Sobald der Order Service implementiert ist, werden hier die zugewiesenen Aufträge
+              mit Status, Zeitraum und Mitarbeiterzuordnung angezeigt.
+            </p>
+            <p style={{ margin: '12px 0 0', fontSize: 13, color: '#607080' }}>
+              Eine optionale Auftrag-ID kann bereits jetzt beim Hinzufügen einer Schicht in der
+              Arbeitsplanung hinterlegt werden.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 }
-
-const panelStyle = { marginTop: 18, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 24 };
