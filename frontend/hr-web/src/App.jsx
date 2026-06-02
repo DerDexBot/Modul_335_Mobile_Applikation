@@ -8,7 +8,8 @@ import AbsencesPage from './pages/AbsencesPage';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const role = localStorage.getItem('role');
+  return token && role === 'HR' ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {

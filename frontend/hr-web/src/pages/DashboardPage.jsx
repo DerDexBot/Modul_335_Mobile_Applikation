@@ -12,6 +12,9 @@ export default function DashboardPage() {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userId');
     navigate('/login');
   };
 

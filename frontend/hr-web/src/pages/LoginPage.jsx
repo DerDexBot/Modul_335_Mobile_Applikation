@@ -18,8 +18,15 @@ export default function LoginPage() {
         return;
       }
       localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('username', data.username ?? username);
+      if (data.userId != null) localStorage.setItem('userId', String(data.userId));
       navigate('/dashboard');
     } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userId');
       setError('Login fehlgeschlagen');
     }
   };

@@ -18,7 +18,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
         if (!user.isActive()) {
-            throw new RuntimeException("Account is deactivated");
+            throw new RuntimeException("Invalid credentials");
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

@@ -4,6 +4,7 @@ import com.workforce.user.dto.CreateUserRequest;
 import com.workforce.user.dto.UpdateUserRequest;
 import com.workforce.user.dto.UserResponse;
 import com.workforce.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -90,7 +91,7 @@ public class UserController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
-    public ResponseEntity<UserResponse> createUser(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
@@ -106,7 +107,7 @@ public class UserController {
     @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
-            @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
