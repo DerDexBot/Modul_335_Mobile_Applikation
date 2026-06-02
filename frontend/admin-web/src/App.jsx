@@ -7,6 +7,11 @@ import './styles.css';
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
+  if (token === 'local-admin-token') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    return <Navigate to="/login" replace />;
+  }
   return token && role === 'ADMIN' ? children : <Navigate to="/login" replace />;
 }
 

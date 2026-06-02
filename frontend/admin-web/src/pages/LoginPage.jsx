@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [error, setError]     = useState('');
   const navigate = useNavigate();
 
-  const enterAdmin = (token = 'local-admin-token') => {
+  const enterAdmin = (token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('role', 'ADMIN');
     navigate('/dashboard');
@@ -25,11 +25,9 @@ export default function LoginPage() {
       }
       enterAdmin(data.token);
     } catch {
-      if (username.trim().toLowerCase() === 'admin' && password.trim()) {
-        enterAdmin();
-        return;
-      }
-      setError('Login fehlgeschlagen. Lokal funktioniert Benutzer admin mit beliebigem Passwort.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      setError('Login fehlgeschlagen. Bitte admin / password verwenden und prüfen, ob der API-Gateway läuft.');
     }
   };
 
