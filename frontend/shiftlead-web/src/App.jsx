@@ -8,7 +8,8 @@ import NotesPage from './pages/NotesPage';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const role = localStorage.getItem('role');
+  return token && role === 'SHIFT_LEAD' ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {

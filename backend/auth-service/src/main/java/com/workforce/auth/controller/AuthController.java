@@ -1,8 +1,10 @@
 package com.workforce.auth.controller;
 
 import com.workforce.auth.config.JwtUtil;
+import com.workforce.auth.dto.LoginRequest;
 import com.workforce.auth.model.User;
 import com.workforce.auth.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +20,8 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> body) {
-        User user = authService.authenticate(body.get("username"), body.get("password"));
+    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        User user = authService.authenticate(request.username(), request.password());
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         return ResponseEntity.ok(Map.of(
                 "token", token,
@@ -30,8 +32,13 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Map<String, String>> validate(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
+    public ResponseEntity<Map<String, String>> validate(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
+        }
+
+        String token = authHeader.substring(7);
         if (!jwtUtil.isValid(token)) {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
         }
