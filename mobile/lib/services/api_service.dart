@@ -53,8 +53,7 @@ class ApiService {
       request.fields.addAll(fields);
     }
     request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-    final streamedResponse =
-        await request.send().timeout(ApiConfig.requestTimeout);
+    final streamedResponse = await request.send().timeout(ApiConfig.requestTimeout);
     final res = await http.Response.fromStream(streamedResponse);
     _checkStatus(res);
     return jsonDecode(res.body);

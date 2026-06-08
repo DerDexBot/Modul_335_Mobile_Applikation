@@ -9,6 +9,7 @@ dist/
 .env
 .env.local
 
+/mobile/android/build/
 # Flutter
 mobile/.dart_tool/
 mobile/build/

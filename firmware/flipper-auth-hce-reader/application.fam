@@ -1,0 +1,10 @@
+App(
+    appid="flipper_auth_hce_reader",
+    name="Auth HCE Reader",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="flipper_auth_hce_reader_app",
+    requires=["gui"],
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Reads the Flipper Auth Android HCE payload by ISO14443-4A SELECT APDU.",
+)
