@@ -118,6 +118,14 @@ Alle Frontends verwenden denselben Login-Endpunkt über den API-Gateway (`localh
 | Aufträge | `/orders` | Zugewiesene Aufträge aus dem Order Service einsehen und Status ändern |
 | Arbeitszeiten | `/time` | Gesamtstunden und Monatsdetails der Mitarbeiter aus dem Time Service einsehen |
 
+**Flutter Mobile App**
+
+| Screen | Funktion |
+|---|---|
+| Check-in/out | `POST /api/time/checkin`, `POST /api/time/checkout`; Pausenminuten werden beim Check-out mitgegeben und im Time Service als `breakMinutes` gespeichert |
+| Absenzen | `POST /api/absences`, `GET /api/absences/employee/{employeeId}` |
+| Rapport | `POST /api/media/upload` mit optionaler Auftrags-ID |
+
 ---
 
 ### Schritt 5 – Automatische API-Tests ausführen
