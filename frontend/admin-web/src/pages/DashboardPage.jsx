@@ -277,6 +277,7 @@ export default function DashboardPage() {
   const [apiEmployees, setApiEmployees] = useState([]);
   const [apiHrUsers, setApiHrUsers] = useState([]);
   const [apiOrders, setApiOrders] = useState([]);
+  const [apiOrdersLoaded, setApiOrdersLoaded] = useState(false);
   const [apiShiftLeads, setApiShiftLeads] = useState([]);
   const [orderForm, setOrderForm] = useState(emptyOrder);
   const [hrForm, setHrForm] = useState(emptyHr);
@@ -329,8 +330,10 @@ export default function DashboardPage() {
   const fetchApiOrders = async () => {
     try {
       const { data } = await api.get('/api/orders');
-      setApiOrders(data.map(toUiOrder));
+      setApiOrders((data || []).map(toUiOrder));
+      setApiOrdersLoaded(true);
     } catch {
+      setApiOrdersLoaded(false);
       showMessage('error', 'Aufträge konnten nicht geladen werden.');
     }
   };
@@ -350,7 +353,7 @@ export default function DashboardPage() {
   }, []);
 
   const notices = useMemo(() => buildNotices(state), [state]);
-  const orders = apiOrders.length > 0 ? apiOrders : state.orders;
+  const orders = apiOrdersLoaded ? apiOrders : state.orders;
 
   const stats = useMemo(() => ({
     openOrders: orders.filter(order => !['abgeschlossen', 'storniert'].includes(order.status)).length,
@@ -947,6 +950,13 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {filteredOrders.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="muted" style={{ textAlign: 'center', padding: 18 }}>
+                          {apiOrdersLoaded ? 'Keine Aufträge im Order Service gefunden.' : 'Keine lokalen Aufträge gefunden.'}
+                        </td>
+                      </tr>
+                    )}
                     {filteredOrders.map(order => (
                       <tr key={order.id}>
                         <td>{order.title}<br /><span className="muted">{order.location}</span></td>

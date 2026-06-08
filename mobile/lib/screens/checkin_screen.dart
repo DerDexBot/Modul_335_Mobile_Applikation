@@ -21,6 +21,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
   String? _message;
   _TimeEntry? _currentEntry;
   _TimeEntry? _lastEntry;
+  final TextEditingController _breakMinutesController = TextEditingController(text: '0');
 
   @override
   void initState() {
@@ -28,6 +29,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCurrent();
     });
+  }
+
+  @override
+  void dispose() {
+    _breakMinutesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -150,6 +157,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
       return;
     }
 
+    final breakText = _breakMinutesController.text.trim();
+    final breakMinutes = int.tryParse(breakText.isEmpty ? '0' : breakText);
+    if (breakMinutes == null || breakMinutes < 0) {
+      setState(() => _error = 'Pause muss eine positive Zahl oder 0 sein');
+      return;
+    }
+
     setState(() {
       _busy = true;
       _error = null;
@@ -159,7 +173,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     try {
       final data = await ApiService(auth).post('/api/time/checkout', {
         'employeeId': userId,
-        'breakMinutes': 0,
+        'breakMinutes': breakMinutes,
       });
       final entry = _TimeEntry.fromJson(data);
       if (!mounted) {
@@ -222,6 +236,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   label: 'Letzter Check-out',
                   value: _formatDateTime(entry.checkOut!),
                 ),
+              if (entry.breakMinutes > 0 || entry.checkOut != null)
+                _InfoText(
+                  label: 'Pause',
+                  value: '${entry.breakMinutes} min',
+                ),
               if (entry.totalHours != null)
                 _InfoText(
                   label: 'Erfasste Zeit',
@@ -241,6 +260,19 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 _error!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFFB91C1C)),
+              ),
+            ],
+            if (_checkedIn) ...[
+              const SizedBox(height: 20),
+              TextField(
+                controller: _breakMinutesController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Pause in Minuten',
+                  helperText: 'Wird beim Check-out von der Arbeitszeit abgezogen',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.coffee),
+                ),
               ),
             ],
             const SizedBox(height: 24),
@@ -289,6 +321,7 @@ class _TimeEntry {
     required this.employeeId,
     required this.checkIn,
     required this.checkOut,
+    required this.breakMinutes,
     required this.totalHours,
   });
 
@@ -296,6 +329,7 @@ class _TimeEntry {
   final int employeeId;
   final DateTime checkIn;
   final DateTime? checkOut;
+  final int breakMinutes;
   final double? totalHours;
 
   factory _TimeEntry.fromJson(dynamic json) {
@@ -305,6 +339,7 @@ class _TimeEntry {
       employeeId: _readInt(map['employeeId']),
       checkIn: _readDateTime(map['checkIn']) ?? DateTime.now(),
       checkOut: _readDateTime(map['checkOut']),
+      breakMinutes: map['breakMinutes'] == null ? 0 : _readInt(map['breakMinutes']),
       totalHours: _readDouble(map['totalHours']),
     );
   }
