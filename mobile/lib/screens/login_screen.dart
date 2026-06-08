@@ -23,15 +23,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final auth = context.read<AuthService>();
     final ok = await auth.login(
       _usernameController.text.trim(),
       _passwordController.text,
     );
-    if (!ok && mounted) {
-      setState(() { _error = 'Login fehlgeschlagen'; _loading = false; });
+    if (!mounted) {
+      return;
     }
+
+    setState(() {
+      _loading = false;
+      if (!ok) {
+        _error = auth.lastError ?? 'Login fehlgeschlagen';
+      }
+    });
   }
 
   @override
@@ -43,17 +53,20 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Workforce', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const Text('Workforce',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
               const SizedBox(height: 32),
               TextField(
                 controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Benutzername', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Benutzername', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Passwort', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Passwort', border: OutlineInputBorder()),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
