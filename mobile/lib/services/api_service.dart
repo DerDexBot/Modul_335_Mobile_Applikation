@@ -1,39 +1,52 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'api_config.dart';
 import 'auth_service.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static const String _baseUrl = ApiConfig.baseUrl;
 
   final AuthService _auth;
 
   ApiService(this._auth);
 
   Future<dynamic> get(String path) async {
-    final res = await http.get(
-      Uri.parse('$_baseUrl$path'),
-      headers: _auth.authHeaders,
-    );
+    final res = await http
+        .get(
+          Uri.parse('$_baseUrl$path'),
+          headers: _auth.authHeaders,
+        )
+        .timeout(ApiConfig.requestTimeout);
     _checkStatus(res);
+    if (res.statusCode == 204 || res.body.isEmpty) {
+      return null;
+    }
     return jsonDecode(res.body);
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    final res = await http.post(
-      Uri.parse('$_baseUrl$path'),
-      headers: _auth.authHeaders,
-      body: jsonEncode(body),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$_baseUrl$path'),
+          headers: _auth.authHeaders,
+          body: jsonEncode(body),
+        )
+        .timeout(ApiConfig.requestTimeout);
     _checkStatus(res);
+    if (res.statusCode == 204 || res.body.isEmpty) {
+      return null;
+    }
     return jsonDecode(res.body);
   }
 
   Future<dynamic> uploadImage(String path, File imageFile) async {
     final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl$path'));
     request.headers['Authorization'] = 'Bearer ${_auth.token}';
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-    final streamedResponse = await request.send();
+    request.files
+        .add(await http.MultipartFile.fromPath('file', imageFile.path));
+    final streamedResponse =
+        await request.send().timeout(ApiConfig.requestTimeout);
     final res = await http.Response.fromStream(streamedResponse);
     _checkStatus(res);
     return jsonDecode(res.body);
