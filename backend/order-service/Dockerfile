@@ -13,6 +13,7 @@ COPY backend/time-service/pom.xml            backend/time-service/
 COPY backend/absence-vacation-service/pom.xml backend/absence-vacation-service/
 COPY backend/billing-service/pom.xml         backend/billing-service/
 COPY backend/report-media-service/pom.xml    backend/report-media-service/
+COPY backend/flipper-auth-service/pom.xml    backend/flipper-auth-service/
 
 RUN mvn -pl backend/order-service -am dependency:go-offline -q
 

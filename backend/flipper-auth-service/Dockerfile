@@ -3,7 +3,6 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y maven --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Alle pom.xml zuerst kopieren -> Docker-Layer-Caching fuer Dependencies
 COPY pom.xml ./
 COPY backend/api-gateway/pom.xml             backend/api-gateway/
 COPY backend/auth-service/pom.xml            backend/auth-service/
@@ -16,13 +15,13 @@ COPY backend/billing-service/pom.xml         backend/billing-service/
 COPY backend/report-media-service/pom.xml    backend/report-media-service/
 COPY backend/flipper-auth-service/pom.xml    backend/flipper-auth-service/
 
-RUN mvn -pl backend/api-gateway -am dependency:go-offline -q
+RUN mvn -pl backend/flipper-auth-service -am dependency:go-offline -q
 
-COPY backend/api-gateway/src backend/api-gateway/src
-RUN mvn -pl backend/api-gateway -am package -DskipTests -q
+COPY backend/flipper-auth-service/src backend/flipper-auth-service/src
+RUN mvn -pl backend/flipper-auth-service -am package -DskipTests -q
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /app/backend/api-gateway/target/*.jar app.jar
-EXPOSE 8000
+COPY --from=build /app/backend/flipper-auth-service/target/*.jar app.jar
+EXPOSE 8009
 ENTRYPOINT ["java", "-jar", "app.jar"]
