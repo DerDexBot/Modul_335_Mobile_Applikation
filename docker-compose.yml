@@ -325,6 +325,8 @@ services:
     restart: "no"
     ports:
       - "3004:80"
+    depends_on:
+      - api-gateway
     networks:
       - workforce-net
 
