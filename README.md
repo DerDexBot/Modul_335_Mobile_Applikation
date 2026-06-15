@@ -123,7 +123,7 @@ Alle Frontends verwenden denselben Login-Endpunkt über den API-Gateway (`localh
 
 | Screen | Funktion |
 |---|---|
-| Check-in/out | `POST /api/time/checkin`, `POST /api/time/checkout`; Pausenminuten werden beim Check-out mitgegeben und im Time Service als `breakMinutes` gespeichert |
+| Check-in/out | Startet eine Flipper-Session, wartet auf die WiFi-Devboard-Bestätigung und liest danach `GET /api/time/current/{employeeId}` oder `GET /api/time/latest/{employeeId}` |
 | Absenzen | `POST /api/absences`, `GET /api/absences/employee/{employeeId}` |
 | Rapport | `POST /api/media/upload` mit optionaler Auftrags-ID |
 
@@ -199,6 +199,7 @@ docker compose down -v && docker compose up --build -d
 |---|---|---|
 | Login schlägt mit 401 fehl | MySQL-Volume mit falsch geseedeten Usern aus alter Version | `docker compose down -v && docker compose up --build -d` |
 | Login leitet sofort zurück auf `/login` | 401-Response vom Login-Endpoint triggerte früher einen Hard-Redirect | Behoben in `api.js` aller drei Frontends (Interceptor prüft jetzt ob Request = Login-Endpoint) |
+| Admin zeigt 403 und kann Mitarbeiter oder Aufträge nicht laden/speichern | Im Browser ist noch ein abgelaufener oder ungültiger JWT gespeichert | Admin-Web entfernt bei 401/403 den alten Loginzustand und leitet zur erneuten Anmeldung weiter; User- und Order-Service antworten bei ungültigen Tokens korrekt mit 401 |
 | Leere Seite ohne Login-Formular | `vite.config.js` fehlte → JSX wurde nicht verarbeitet | Behoben, `vite.config.js` ist vorhanden |
 | CORS-Fehler 403 | Gateway hatte kein `globalcors`, Services gaben doppelte CORS-Header | Behoben: Gateway verwaltet CORS, Services haben `cors.disable()` |
 | Admin zeigt andere User als HR-Frontend | `adminSeed.js` enthielt lokale Dummy-User (Amir Suter, Lea Baumann etc.); HR- und Mitarbeiter-Formulare schrieben in `localStorage` statt in die DB | Behoben in `DashboardPage.jsx`: `saveHrUser` und `saveEmployee` rufen jetzt `POST /api/users` auf; Suche und Stats verwenden echte API-Daten |
@@ -558,6 +559,7 @@ Content-Type: application/json
 - `POST /api/time/checkin` – Check-in speichern
 - `POST /api/time/checkout` – Check-out speichern und Netto-Arbeitszeit berechnen
 - `GET /api/time/current/{employeeId}` – aktuell offener Check-in eines Mitarbeiters
+- `GET /api/time/latest/{employeeId}` – letzter Zeiteintrag eines Mitarbeiters
 - `GET /api/time/today/{employeeId}` – heutiger Zeiteintrag eines Mitarbeiters
 - `GET /api/time/month/{employeeId}?month=&year=` – Monatsauswertung pro Mitarbeiter
 - `GET /api/time/total?from=&to=` – Gesamtstunden aller Mitarbeiter im Zeitraum
@@ -708,7 +710,7 @@ note=Rapportfoto Eingang A
 | `lib/screens/login_screen.dart` | Login-UI |
 | `lib/screens/home_screen.dart` | Bottom-Navigation mit 4 Tabs |
 | `lib/screens/calendar_screen.dart` | Arbeitskalender mit echten veröffentlichten Schichten aus dem Planning Service |
-| `lib/screens/checkin_screen.dart` | Check-in / Check-out Button mit Time-Service-Anbindung |
+| `lib/screens/checkin_screen.dart` | Check-in / Check-out mit Flipper-HCE, WiFi-Devboard-Bestätigung und Time-Service-Abfrage |
 | `lib/screens/absence_screen.dart` | Ferienanfrage + Absenz mit Datumswahl einreichen und eigene Anfragen anzeigen |
 | `lib/screens/report_screen.dart` | Kamera öffnen, Bild aufnehmen und per Report/Media Service hochladen |
 
