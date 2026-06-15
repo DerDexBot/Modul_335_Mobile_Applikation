@@ -198,6 +198,7 @@ docker compose down -v && docker compose up --build -d
 |---|---|---|
 | Login schlägt mit 401 fehl | MySQL-Volume mit falsch geseedeten Usern aus alter Version | `docker compose down -v && docker compose up --build -d` |
 | Login leitet sofort zurück auf `/login` | 401-Response vom Login-Endpoint triggerte früher einen Hard-Redirect | Behoben in `api.js` aller drei Frontends (Interceptor prüft jetzt ob Request = Login-Endpoint) |
+| Admin zeigt 403 und kann Mitarbeiter oder Aufträge nicht laden/speichern | Im Browser ist noch ein abgelaufener oder ungültiger JWT gespeichert | Admin-Web entfernt bei 401/403 den alten Loginzustand und leitet zur erneuten Anmeldung weiter; User- und Order-Service antworten bei ungültigen Tokens korrekt mit 401 |
 | Leere Seite ohne Login-Formular | `vite.config.js` fehlte → JSX wurde nicht verarbeitet | Behoben, `vite.config.js` ist vorhanden |
 | CORS-Fehler 403 | Gateway hatte kein `globalcors`, Services gaben doppelte CORS-Header | Behoben: Gateway verwaltet CORS, Services haben `cors.disable()` |
 | Admin zeigt andere User als HR-Frontend | `adminSeed.js` enthielt lokale Dummy-User (Amir Suter, Lea Baumann etc.); HR- und Mitarbeiter-Formulare schrieben in `localStorage` statt in die DB | Behoben in `DashboardPage.jsx`: `saveHrUser` und `saveEmployee` rufen jetzt `POST /api/users` auf; Suche und Stats verwenden echte API-Daten |
