@@ -119,13 +119,14 @@ Alle Frontends verwenden denselben Login-Endpunkt über den API-Gateway (`localh
 | Aufträge | `/orders` | Zugewiesene Aufträge aus dem Order Service einsehen und Status ändern |
 | Arbeitszeiten | `/time` | Gesamtstunden und Monatsdetails der Mitarbeiter aus dem Time Service einsehen |
 
-**Flutter Mobile App**
+**Flutter Mobile App** (Login: `emp.meier` / `password`)
 
 | Screen | Funktion |
 |---|---|
-| Check-in/out | Startet eine Flipper-Session, wartet auf die WiFi-Devboard-Bestätigung und liest danach `GET /api/time/current/{employeeId}` oder `GET /api/time/latest/{employeeId}` |
+| Check-in/out | `POST /api/time/checkin`, `POST /api/time/checkout`; Pausenminuten werden beim Check-out mitgegeben |
+| Kalender | `GET /api/planning/calendar/{employeeId}` – zeigt veröffentlichte Schichten des laufenden Monats |
 | Absenzen | `POST /api/absences`, `GET /api/absences/employee/{employeeId}` |
-| Rapport | `POST /api/media/upload` mit optionaler Auftrags-ID |
+| Rapport | `POST /api/media/upload` mit optionaler Auftrags-ID; Bild wird in MongoDB gespeichert |
 
 ---
 
@@ -698,28 +699,166 @@ note=Rapportfoto Eingang A
 
 ## 8. Mobile App (Flutter)
 
-**Verzeichnis:** `mobile/`
+**Verzeichnis:** `mobile/`  
+**Rolle:** Mitarbeiter (`emp.meier` / `password`)  
+**Technologie:** Flutter SDK 3.3+, Provider 6.1, http, SharedPreferences, image_picker
 
-### Bereits implementiert
+Die Mobile App verbindet sich mit demselben API Gateway (`:8000`) und verwendet dasselbe JWT wie die drei Web-Frontends. Sie ist **ausschliesslich für die Rolle `EMPLOYEE`** gedacht.
 
-| Datei | Inhalt |
+---
+
+### Voraussetzungen (Entwicklungsumgebung)
+
+- **Flutter SDK** ≥ 3.3 ([flutter.dev/docs/get-started/install](https://flutter.dev/docs/get-started/install))
+- **Android Studio** mit installiertem Android Emulator (API 33+) **oder** ein physisches Android-Gerät
+- **Docker-Stack läuft** (`docker compose up -d`) – die App spricht gegen den Backend-Stack
+
+---
+
+### Schritt 1 – API-URL konfigurieren
+
+Die Basis-URL für alle API-Anfragen steht zentral in einer Datei:
+
+```
+mobile/lib/services/api_config.dart
+```
+
+```dart
+class ApiConfig {
+  // Android Emulator: 10.0.2.2 = localhost des Host-Rechners
+  // Echtes Gerät im selben WLAN: lokale IP des Host-Rechners (z.B. 192.168.1.x)
+  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const Duration requestTimeout = Duration(seconds: 8);
+}
+```
+
+| Situation | Wert für `baseUrl` |
 |---|---|
-| `lib/main.dart` | App-Einstieg, Provider-Setup, Login/Home-Weiche |
-| `lib/services/auth_service.dart` | Login, Logout, JWT/UserId/Rolle speichern (SharedPreferences), ChangeNotifier |
-| `lib/services/api_service.dart` | GET, POST, Bild-Upload mit Auth-Header |
-| `lib/screens/login_screen.dart` | Login-UI |
-| `lib/screens/home_screen.dart` | Bottom-Navigation mit 4 Tabs |
-| `lib/screens/calendar_screen.dart` | Arbeitskalender mit echten veröffentlichten Schichten aus dem Planning Service |
-| `lib/screens/checkin_screen.dart` | Check-in / Check-out mit Flipper-HCE, WiFi-Devboard-Bestätigung und Time-Service-Abfrage |
-| `lib/screens/absence_screen.dart` | Ferienanfrage + Absenz mit Datumswahl einreichen und eigene Anfragen anzeigen |
-| `lib/screens/report_screen.dart` | Kamera öffnen, Bild aufnehmen und per Report/Media Service hochladen |
+| Android-Emulator (Standard) | `http://10.0.2.2:8000` |
+| Echtes Gerät im selben WLAN | `http://<lokale-IP-des-Rechners>:8000` |
+| iOS-Simulator | `http://localhost:8000` |
+
+> Die lokale IP des Rechners findet man unter Windows mit `ipconfig` (z.B. `192.168.1.42`), unter macOS/Linux mit `ifconfig` oder `ip a`.
+
+**Wichtig:** Nach einer URL-Änderung muss die App neu gebaut werden (`flutter run`).
+
+---
+
+### Schritt 2 – App starten
+
+```bash
+cd mobile
+flutter pub get          # Dependencies installieren (einmalig)
+flutter run              # App im verbundenen Emulator / Gerät starten
+```
+
+Alternativer Start direkt im Android Studio:
+1. Emulator über **Device Manager** starten
+2. In der Run-Konfiguration das `mobile/`-Verzeichnis auswählen
+3. **Run** drücken
+
+---
+
+### Schritt 3 – Einloggen
+
+| Feld | Wert |
+|---|---|
+| Benutzername | `emp.meier` |
+| Passwort | `password` |
+
+Die App ruft `POST /api/auth/login` auf denselben API Gateway auf wie die Web-Frontends. Nach erfolgreichem Login speichert sie `token`, `role`, `username` und `userId` in den `SharedPreferences` des Geräts. Das JWT ist 24 Stunden gültig.
+
+> Die App prüft die Rolle **nicht** beim Login – technisch kann jeder Systembenutzer die Mobile App verwenden. Im Normalbetrieb ist sie für die Rolle `EMPLOYEE` vorgesehen.
+
+---
+
+### Screens und API-Endpoints
+
+#### Tab 1 – Check-in / Check-out
+
+Ermöglicht dem Mitarbeiter, die Arbeitszeit direkt aus der App zu erfassen.
+
+| Aktion | Endpoint | Payload |
+|---|---|---|
+| Status laden | `GET /api/time/current/{userId}` | – |
+| Check-in | `POST /api/time/checkin` | `{ "employeeId": 4 }` |
+| Check-out | `POST /api/time/checkout` | `{ "employeeId": 4, "breakMinutes": 30 }` |
+
+- Beim Check-out wird die Pausenzeit in Minuten abgezogen
+- Die Netto-Arbeitsstunden werden vom Time Service berechnet und zurückgegeben
+- Ist der Mitarbeiter bereits eingecheckt, zeigt die App den aktuellen Check-in-Zeitpunkt
+
+#### Tab 2 – Kalender
+
+Zeigt die veröffentlichten Schichten des Mitarbeiters für den laufenden Monat.
+
+| Aktion | Endpoint |
+|---|---|
+| Schichten laden | `GET /api/planning/calendar/{userId}?from=YYYY-MM-DD&to=YYYY-MM-DD` |
+
+> Schichten sind nur sichtbar, wenn der Schichtleiter den Arbeitsplan **veröffentlicht** hat (Status `PUBLISHED`). Entwürfe (`DRAFT`) erscheinen nicht.
+
+#### Tab 3 – Absenzen & Ferien
+
+Mitarbeiter kann eigene Ferienanträge und Absenzen einreichen und den Status einsehen.
+
+| Aktion | Endpoint | Payload |
+|---|---|---|
+| Absenzen laden | `GET /api/absences/employee/{userId}` | – |
+| Absenz einreichen | `POST /api/absences` | `{ "employeeId": 4, "type": "VACATION", "startDate": "...", "endDate": "...", "reason": "..." }` |
+
+Typen: `VACATION` (Ferien), `SICK` (Krank), `OTHER` (Sonstiges)  
+Status: `PENDING` → `APPROVED` / `REJECTED` (wird von HR gesetzt)
+
+#### Tab 4 – Rapport / Foto-Upload
+
+Mitarbeiter fotografiert den Arbeitsort und lädt das Bild mit optionaler Auftrags-ID hoch.
+
+| Aktion | Endpoint |
+|---|---|
+| Bild hochladen | `POST /api/media/upload` (Multipart) |
+
+Felder: `file` (Bilddatei), `employeeId`, `orderId` (optional), `note` (optional)  
+Das Bild wird in **MongoDB** (`workforce-media.media_reports`) gespeichert. Max. 10 MB.
+
+---
+
+### Architektur der Mobile App
+
+```
+mobile/lib/
+├── main.dart                    # App-Einstieg, Provider-Setup, Login/Home-Weiche
+├── services/
+│   ├── api_config.dart          # Zentrale URL-Konfiguration (hier bei Bedarf anpassen)
+│   ├── api_service.dart         # GET, POST, Multipart-Upload mit JWT-Header
+│   └── auth_service.dart        # Login, Logout, JWT/UserId/Rolle (SharedPreferences)
+└── screens/
+    ├── login_screen.dart        # Login-UI
+    ├── home_screen.dart         # Bottom-Navigation (4 Tabs)
+    ├── checkin_screen.dart      # Check-in / Check-out → Time Service
+    ├── calendar_screen.dart     # Monatskalender → Planning Service
+    ├── absence_screen.dart      # Absenzen einreichen und anzeigen → Absence Service
+    └── report_screen.dart       # Kamera → Bild-Upload → Report/Media Service
+```
+
+Alle API-Aufrufe laufen ausschliesslich über `ApiService`. Kein Screen ruft `http` direkt auf. Der `AuthService` verwaltet den Login-Zustand und stellt den JWT-Header für alle Requests bereit.
+
+---
+
+### Troubleshooting Mobile
+
+| Problem | Ursache | Lösung |
+|---|---|---|
+| `Backend nicht erreichbar` | Falsche `baseUrl` in `api_config.dart` | URL auf `10.0.2.2:8000` (Emulator) oder lokale IP (echtes Gerät) setzen |
+| `Nicht autorisiert` (401) | Token abgelaufen (24h) oder nie gesetzt | Ausloggen und neu einloggen |
+| Keine Schichten im Kalender | Schichtleiter hat Plan noch nicht veröffentlicht | Im Schichtleiter-Web Plan veröffentlichen (Status → PUBLISHED) |
+| Kamera öffnet sich nicht | `image_picker` Berechtigungen fehlen | Android: Kameraberechtigung in App-Einstellungen erteilen |
+| Upload schlägt mit 413 fehl | Bild grösser als 10 MB | Kleinere Auflösung / niedrigere Bildqualität wählen |
 
 ### Noch zu implementieren
 
-- Auftrags-Daten herunterladen (Order Service)
-- Info-/Rechteanzeige des eigenen Benutzers
-
-> **Hinweis:** Im Android-Emulator ist `http://10.0.2.2:8000` die Adresse des Hosts (= `localhost` des Computers). Für echte Geräte muss die lokale IP-Adresse verwendet werden.
+- Auftragsdaten herunterladen (`GET /api/orders/{id}/download`)
+- Eigenes Benutzerprofil anzeigen
 
 ---
 
