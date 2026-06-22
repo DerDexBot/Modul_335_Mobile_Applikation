@@ -98,12 +98,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8001"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -125,12 +119,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8002"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -152,12 +140,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8003"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -179,12 +161,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8004"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -206,12 +182,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8005"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -233,12 +203,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8006"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -260,12 +224,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8007"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -283,12 +241,6 @@ services:
     depends_on:
       mongo-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8008"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -314,13 +266,7 @@ services:
       mysql-db:
         condition: service_healthy
       user-role-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8009"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
+        condition: service_started
     networks:
       - workforce-net
 
@@ -342,12 +288,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8010"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 120s
     networks:
       - workforce-net
 
@@ -363,31 +303,25 @@ services:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
       auth-service:
-        condition: service_healthy
+        condition: service_started
       user-role-service:
-        condition: service_healthy
+        condition: service_started
       order-service:
-        condition: service_healthy
+        condition: service_started
       planning-service:
-        condition: service_healthy
+        condition: service_started
       time-service:
-        condition: service_healthy
+        condition: service_started
       absence-vacation-service:
-        condition: service_healthy
+        condition: service_started
       billing-service:
-        condition: service_healthy
+        condition: service_started
       config-service:
-        condition: service_healthy
+        condition: service_started
       report-media-service:
         condition: service_started
       flipper-auth-service:
         condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8000"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 20s
     networks:
       - workforce-net
 
@@ -432,7 +366,7 @@ services:
       - "3004:80"
     depends_on:
       api-gateway:
-        condition: service_healthy
+        condition: service_started
     networks:
       - workforce-net
 
