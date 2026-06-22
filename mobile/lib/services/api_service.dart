@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'api_config.dart';
 import 'auth_service.dart';
 
@@ -52,8 +53,13 @@ class ApiService {
     if (fields != null) {
       request.fields.addAll(fields);
     }
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-    final streamedResponse = await request.send().timeout(ApiConfig.requestTimeout);
+    final ext = imageFile.path.split('.').last.toLowerCase();
+    final contentType = MediaType('image', ext == 'png' ? 'png' : 'jpeg');
+    request.files.add(await http.MultipartFile.fromPath(
+      'file', imageFile.path,
+      contentType: contentType,
+    ));
+    final streamedResponse = await request.send().timeout(ApiConfig.uploadTimeout);
     final res = await http.Response.fromStream(streamedResponse);
     _checkStatus(res);
     return jsonDecode(res.body);
