@@ -24,7 +24,7 @@ Diese Matrix gleicht UML/Architektur, API-Gateway, Backend-Controller, Web-Front
 |---|---|---|---|---|
 | HR gibt Monatsstunden frei | `POST /api/planning/hour-budgets` | HR/ADMIN | HR Web `/hour-budgets` | Voraussetzung für Arbeitspläne |
 | HR/Schichtleiter lädt Freigaben | `GET /api/planning/hour-budgets?shiftLeadId=` | HR/ADMIN/SHIFT_LEAD | HR Web, Schichtleiter Web `/planning` | Schichtleiter filtert nach eigener ID |
-| Arbeitsplan erstellen | `POST /api/planning/workplans` | SHIFT_LEAD/HR/ADMIN | Schichtleiter Web `/planning` | `approvedHours` kommt aus HR-Freigabe, nicht aus dem UI |
+| Arbeitsplan erstellen | `POST /api/planning/workplans` | SHIFT_LEAD/HR/ADMIN | Schichtleiter Web `/planning` | `approvedHours` kommt aus HR-Freigabe; Request enthält kein `approvedHours` |
 | Arbeitspläne laden | `GET /api/planning/workplans?shiftLeadId=` | SHIFT_LEAD/HR/ADMIN | Schichtleiter Dashboard/Planning | OK |
 | Schicht hinzufügen | `POST /api/planning/workplans/{id}/shifts` | SHIFT_LEAD/HR/ADMIN | Schichtleiter Web `/planning` | Optional mit `orderId` |
 | Plan veröffentlichen | `PUT /api/planning/workplans/{id}/publish` | SHIFT_LEAD/HR/ADMIN | Schichtleiter Web `/planning` | Danach für Mobile sichtbar |

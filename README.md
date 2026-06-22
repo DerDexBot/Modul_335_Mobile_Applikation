@@ -518,6 +518,8 @@ Content-Type: application/json
 
 **Stundenlogik:**
 - `approvedHours` wird aus der HR-Stundenfreigabe übernommen und nicht mehr vom Schichtleiter eingegeben.
+- Der Request `POST /api/planning/workplans` enthält deshalb kein `approvedHours`; ohne passende HR-Freigabe wird der Arbeitsplan abgelehnt.
+- Die Tabelle `work_plans` speichert zusätzlich `hour_budget_id`, damit nachvollziehbar bleibt, aus welcher HR-Freigabe das Kontingent übernommen wurde.
 - `plannedHours` wird aus allen Schichten eines Arbeitsplans berechnet.
 - `remainingHours` zeigt die Differenz zwischen freigegebenen und geplanten Stunden.
 - `overLimit` wird `true`, wenn mehr als das HR-Kontingent geplant wurde.

@@ -649,6 +649,7 @@ sequenceDiagram
     PS-->>HRWeb: 201 HourBudget
 
     Schichtleiter->>SLWeb: Neuen Arbeitsplan anlegen
+    Note over SLWeb,PS: WorkPlan-Request enthält kein approvedHours; Budget kommt nur von HR
     SLWeb->>GW: POST /api/planning/workplans\n{title, shiftLeadId, startDate, endDate}
     GW->>PS: POST /api/planning/workplans
     PS->>DB: SELECT hour_budgets für shiftLeadId + Monat

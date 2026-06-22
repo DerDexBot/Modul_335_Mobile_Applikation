@@ -66,12 +66,25 @@ class PlanningControllerTests {
                                 "title", "Monatsplan Juli 2026",
                                 "shiftLeadId", 5,
                                 "startDate", "2026-07-01",
-                                "endDate", "2026-07-31",
-                                "approvedHours", 160
+                                "endDate", "2026-07-31"
                         ))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Monatsplan Juli 2026"))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
+    }
+
+    @Test
+    void createWorkPlanWithoutHourBudgetReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/planning/workplans")
+                        .header("Authorization", "Bearer " + token("sl.meier", "SHIFT_LEAD"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", "Plan ohne Budget",
+                                "shiftLeadId", 99,
+                                "startDate", "2026-08-01",
+                                "endDate", "2026-08-31"
+                        ))))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -85,8 +98,7 @@ class PlanningControllerTests {
                                 "title", "Plan A",
                                 "shiftLeadId", 5,
                                 "startDate", "2026-07-01",
-                                "endDate", "2026-07-31",
-                                "approvedHours", 80
+                                "endDate", "2026-07-31"
                         ))))
                 .andExpect(status().isCreated());
 
@@ -107,8 +119,7 @@ class PlanningControllerTests {
                                 "title", "Plan mit Schicht",
                                 "shiftLeadId", 7,
                                 "startDate", "2026-07-01",
-                                "endDate", "2026-07-31",
-                                "approvedHours", 40
+                                "endDate", "2026-07-31"
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -141,8 +152,7 @@ class PlanningControllerTests {
                                 "title", "Plan zum Veroeffentlichen",
                                 "shiftLeadId", 7,
                                 "startDate", "2026-07-01",
-                                "endDate", "2026-07-31",
-                                "approvedHours", 40
+                                "endDate", "2026-07-31"
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -179,8 +189,7 @@ class PlanningControllerTests {
                                 "title", "Kalendertest",
                                 "shiftLeadId", 7,
                                 "startDate", "2026-07-01",
-                                "endDate", "2026-07-31",
-                                "approvedHours", 40
+                                "endDate", "2026-07-31"
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn();
